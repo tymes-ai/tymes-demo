@@ -3,3 +3,8 @@ dist
 .vercel
 .DS_Store
 .env*
+
+# Local voice recordings and voiced videos
+video/*.m4a
+video/tymes-two-campaigns-narrated.mp4
+video/tymes-two-campaigns-my-voice.mp4
