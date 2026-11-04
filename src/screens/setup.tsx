@@ -1,5 +1,5 @@
 import {useEffect, useState} from 'react';
-import {cancelNewCampaign, COMPANY, FOUNDER, generateList, kept, launch, newCampaign, openConflicts, packOf, PACKS, seedRunning, startProfile, subjectOf, stepBody, type Campaign, type Goal, type Prospect} from '../sim/engine';
+import {buyMeetingPack, cancelNewCampaign, COMPANY, firstSendDays, FOUNDER, generateList, kept, launch, MEETING_PACK_SIZES, newCampaign, openConflicts, packOf, PACKS, seedRunning, startProfile, subjectOf, stepBody, TARGETS_PER_MEETING, targetCount, type Campaign, type Goal, type MeetingPackSize, type Prospect} from '../sim/engine';
 import {getState, replace, update, useDemo} from '../sim/store';
 import {Arrow, Band, Field, Figure, Glyph, go, Logo, Shape, Tabs, Working, type ShapeName} from '../ui/parts';
 import {ListReview} from './prospects';
@@ -46,7 +46,7 @@ export function Start() {
       <ul className="start-loop">
         {(
           [
-            ['square', 'Find', 'Profile, ISP, and 50 targets to approve.'],
+            ['square', 'Find', 'Profile, ISP, and 10 targets per meeting to approve.'],
             ['triangle', 'Reach', 'Personal messages, by email and LinkedIn.'],
             ['half', 'Meet', 'Confirmed meetings, each with a brief.'],
             ['sun', 'Learn', 'A verdict per person, and a sharper next round.'],
@@ -111,8 +111,8 @@ export function Login() {
           <span />
         </div>
         <div className="login-right dark">
-          <p>Pay only for confirmed meetings.</p>
-          <small>No seats, no credits.</small>
+          <p>Pay only for the meetings you had.</p>
+          <small>Buy a pack of 10, 20, 50, or 100 up front. No seats.</small>
         </div>
       </div>
     </div>
@@ -123,20 +123,23 @@ export function Login() {
 
 export function Payment() {
   const [kind, setKind] = useState<'promo' | 'card'>('promo');
+  const [size, setSize] = useState<MeetingPackSize>(20);
   const finish = () => {
     update(s => {
       s.payment = kind === 'promo' ? {kind, label: 'Promo code BETA2026'} : {kind, label: 'Card ending 4242'};
+      buyMeetingPack(s, size);
     });
     go('/company');
   };
   return (
     <Frame step={1}>
       <div className="setup-head">
-        <h1 className="h-step">Add a card or a promo code before work starts.</h1>
+        <h1 className="h-step">Buy a pack of meetings before work starts.</h1>
         <Glyph shapes={['box', 'openbox']} />
       </div>
       <div className="split75">
         <div className="stack">
+          <PackPicker value={size} onChange={setSize} />
           <Tabs
             tabs={[['promo', 'Promo code'], ['card', 'Card']] as const}
             value={kind}
@@ -153,20 +156,34 @@ export function Payment() {
           )}
           <div className="row-end" style={{marginTop: 4}}>
             <button type="button" className="btn" onClick={finish}>
-              {kind === 'promo' ? 'Apply the code' : 'Use this card'} <Arrow />
+              Buy {size} meetings <Arrow />
             </button>
           </div>
         </div>
         <div className="card">
           <div className="ch c2">What you pay for</div>
           <ul className="rows">
-            <li><span><b>Confirmed meetings</b><br /><span className="small muted">The only thing that is billed.</span></span><span className="pill">Billed</span></li>
-            <li><span><b>Outreach, replies, proposed times</b><br /><span className="small muted">All the work to get there.</span></span><span className="pill o">Not billed</span></li>
-            <li><span><b>Missed meetings</b><br /><span className="small muted">Tymes finds a new time.</span></span><span className="pill o">Not billed</span></li>
+            <li><span><b>Meetings you had</b><br /><span className="small muted">The only thing that uses your pack.</span></span><span className="pill">Uses 1</span></li>
+            <li><span><b>Outreach, replies, proposed times</b><br /><span className="small muted">All the work to get there.</span></span><span className="pill o">Uses 0</span></li>
+            <li><span><b>Missed meetings</b><br /><span className="small muted">Tymes finds a new time.</span></span><span className="pill o">Uses 0</span></li>
           </ul>
         </div>
       </div>
     </Frame>
+  );
+}
+
+export function PackPicker({value, onChange}: {value: MeetingPackSize; onChange: (size: MeetingPackSize) => void}) {
+  return (
+    <div className="packs" role="radiogroup" aria-label="Meeting pack">
+      {MEETING_PACK_SIZES.map(size => (
+        <button key={size} type="button" role="radio" aria-checked={value === size} onClick={() => onChange(size)}>
+          <b>{size}</b>
+          <span>meetings</span>
+          <small>{size * TARGETS_PER_MEETING} targets</small>
+        </button>
+      ))}
+    </div>
   );
 }
 
@@ -473,6 +490,7 @@ function WhoStep({c}: {c: Campaign}) {
 }
 
 function IspStep({c}: {c: Campaign}) {
+  const state = useDemo();
   const pack = packOf(c);
   const [run, setRun] = useState(false);
   const preview = pack.heroes.slice(0, 3);
@@ -514,7 +532,7 @@ function IspStep({c}: {c: Campaign}) {
         </div>
         <div className="stack">
           <div>
-            <p style={{fontSize: 'clamp(44px, 5vw, 72px)', fontWeight: 800, letterSpacing: '-0.04em', lineHeight: 0.95}}>412 people</p>
+            <p style={{fontSize: 'clamp(44px, 5vw, 72px)', fontWeight: 800, letterSpacing: '-0.04em', lineHeight: 0.95}}>{Math.max(412, targetCount(state) * 4).toLocaleString('en-GB')} people</p>
             <p className="muted" style={{marginTop: 6}}>match this ISP in Tymes lead data. Here are three of them.</p>
           </div>
           <div className="table-wrap">
@@ -538,14 +556,14 @@ function IspStep({c}: {c: Campaign}) {
                 'Matching each person to one identity',
                 'Dropping 2 people on your do-not-contact list',
                 'Scoring fit against the ISP',
-                'Picking the top 50',
+                `Picking the top ${targetCount(state)}`,
               ]}
               onDone={() => update(generateList)}
             />
           ) : (
             <div>
               <button type="button" className="btn" onClick={() => setRun(true)}>
-                Generate 50 targets <Arrow />
+                Generate {targetCount(state)} targets <Arrow />
               </button>
             </div>
           )}
@@ -672,6 +690,7 @@ function LaunchStep({c}: {c: Campaign}) {
             <li><span>Goal</span><b>{pack.goalName}</b></li>
             <li><span>Prospects approved</span><b>{count}</b></li>
             <li><span>Messages approved</span><b>{count} × 3 steps</b></li>
+            <li><span>First emails</span><b>20 a day per mailbox, {firstSendDays(c)} working days to send them all</b></li>
             <li><span>Sent from</span><b>{state.user?.email}, and LinkedIn</b></li>
             <li><span>Before each send</span><b>Approved, not on DNC, under limits</b></li>
           </ul>

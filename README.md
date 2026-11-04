@@ -25,8 +25,8 @@ Dragging `dist/` into Netlify Drop also works. The page sets `noindex`.
 
 1. **First page**: "Start from login" walks the setup. "Open a running campaign"
    skips to day 7.
-2. **Setup**: log in, promo code, company profile, connect accounts, goal, ISP,
-   50 targets, messages, start outreach. All three goals have their own story.
+2. **Setup**: log in, buy a meeting pack, company profile, connect accounts, goal, ISP,
+   targets (10 for every meeting in the pack), messages, start outreach. All three goals have their own story.
 3. **The bar at the bottom** moves the story:
    - **Next day** moves the clock one working day
    - **Play** runs on its own, and stops when a reply needs approval
@@ -34,13 +34,15 @@ Dragging `dist/` into Netlify Drop also works. The page sets `noindex`.
 4. **Worth showing**:
    - Inbox: a labeled reply, a drafted answer, and approval
    - Day 3: an unsubscribe goes to do-not-contact by itself
-   - Maya Okafor misses her call: no charge, and a new time
+   - Maya Okafor misses her call: nothing used from the pack, and a new time
+   - Settings, Billing: buy another pack of 10, 20, 50, or 100. Only held meetings
+     use the pack, and work pauses when it runs out
    - Meetings: the brief, then the verdict, the rating, and the moved fit scores
    - Settings, Approval level: pick Automatic, then move the clock
    - Settings, Do not contact: add a company, then read Campaign, Sequence
    - Day 12, Campaign, Act: change the ISP, and review a sharper round 2
    - Campaigns, New campaign: run another goal under the same account. Home rolls
-     them up, and one clock, calendar, DNC list, and bill cover them all
+     them up, and one clock, calendar, DNC list, and meeting pack cover them all
    - `video/tymes-two-campaigns.mp4` is a recorded walkthrough of this
 
 ## Where things are

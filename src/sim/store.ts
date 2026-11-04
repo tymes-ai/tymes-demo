@@ -1,7 +1,7 @@
 import {useSyncExternalStore} from 'react';
 import {type DemoState, initialState, stampLog} from './engine';
 
-const KEY = 'tymes-demo-v2';
+const KEY = 'tymes-demo-v3';
 
 function load(): DemoState {
   try {

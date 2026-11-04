@@ -1,4 +1,4 @@
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import {
   allCampaigns,
   allTasks,
@@ -146,7 +146,7 @@ export function Home() {
                   <Shape name={task.kind === 'rate' ? 'sun' : task.kind === 'brief' ? 'half' : task.kind === 'draft' || task.kind === 'slot' ? 'triangle' : 'square'} />
                   <span>
                     <b>{task.title}</b>
-                    <small>{several && task.kind !== 'budget' ? `${packOf(nameOf(task.goal) ?? c).campaign}. ` : ''}{task.detail}</small>
+                    <small>{several && task.kind !== 'budget' && task.kind !== 'pack' ? `${packOf(nameOf(task.goal) ?? c).campaign}. ` : ''}{task.detail}</small>
                   </span>
                   <a className="btn ghost sm" href={task.href} onClick={() => update(s => focusCampaign(s, task.goal))}>{task.action}</a>
                 </li>
@@ -275,9 +275,13 @@ export function InboxView({route, round}: {route?: string; round?: number}) {
   const others = threads.filter(t => !t.draft && !t.slots).sort((a, b) => b.lastDay - a.lastDay);
   const [tab, setTab] = useState<'need' | 'all'>(route && others.some(t => t.prospectId === route) && !waiting.some(t => t.prospectId === route) ? 'all' : 'need');
   const [selected, setSelected] = useState<string | undefined>(route);
-  if (!c) return null;
   const list = tab === 'need' ? waiting : others;
   const current = list.find(t => t.prospectId === selected) ?? list[0];
+  // A new thread starts at the top, and a shorter page never leaves you scrolled past its end.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [current?.prospectId]);
+  if (!c) return null;
   return (
     <>
       <Tabs tabs={[['need', 'Needs approval', waiting.length], ['all', 'Conversations', others.length]] as const} value={tab} onChange={setTab} />

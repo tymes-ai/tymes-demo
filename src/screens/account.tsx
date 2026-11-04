@@ -1,8 +1,8 @@
 import {useState} from 'react';
-import {allCampaigns, budgetUsed, fmtDay, type BookingMode, type Level} from '../sim/engine';
+import {allCampaigns, budgetUsed, buyMeetingPack, fmtDay, meetingsBought, meetingsLeft, meetingsUsed, type BookingMode, type Level, type MeetingPackSize} from '../sim/engine';
 import {update, useDemo} from '../sim/store';
-import {Field, PageHead, Shape, type ShapeName} from '../ui/parts';
-import {ConnectButton} from './setup';
+import {Arrow, Field, PageHead, Shape, type ShapeName} from '../ui/parts';
+import {ConnectButton, PackPicker} from './setup';
 
 const GROUPS: readonly {name: string; items: readonly {id: string; name: string; sub: string}[]}[] = [
   {
@@ -187,30 +187,45 @@ function Team() {
 
 function Billing() {
   const state = useDemo();
+  const [size, setSize] = useState<MeetingPackSize>(20);
   const campaigns = allCampaigns(state);
   const meetings = campaigns.flatMap(c => c.meetings).sort((a, b) => b.day - a.day);
-  const charged = meetings.filter(m => m.status === 'held').length;
+  const left = meetingsLeft(state);
   return (
     <div className="stack" style={{gap: 28}}>
       <div className="poster-band">
-        <h2>{charged} confirmed {charged === 1 ? 'meeting' : 'meetings'}. That is the whole bill.</h2>
-        <p>No seats, no credits. Pricing is set at launch, so the amounts stay blank here.</p>
+        <h2>{left} {left === 1 ? 'meeting' : 'meetings'} left in your pack.</h2>
+        <p>{meetingsBought(state)} bought, {meetingsUsed(state)} used. You pay only for the meetings you had. Pricing is set at launch, so the amounts stay blank here.</p>
       </div>
       <div className="split57" style={{marginTop: 0}}>
-        <ul className="dnc">
-          <li>
-            <span><b>{state.payment?.label}</b><small>Payment method</small></span>
-            <span className="pill o">Active</span>
-          </li>
-        </ul>
+        <div className="stack">
+          <section>
+            <h2 className="h-block" style={{marginBottom: 10}}>Buy another pack</h2>
+            <PackPicker value={size} onChange={setSize} />
+            <button type="button" className="btn" style={{marginTop: 14}} onClick={() => update(s => buyMeetingPack(s, size))}>
+              Buy {size} meetings <Arrow />
+            </button>
+          </section>
+          <section>
+            <h2 className="h-block" style={{marginBottom: 10}}>Your packs</h2>
+            <ul className="dnc">
+              {[...state.meetingPacks].reverse().map((pack, i) => (
+                <li key={state.meetingPacks.length - i}>
+                  <span><b>{pack.size} meetings</b><small>{pack.bought}</small></span>
+                  <span className="small muted">{pack.paidWith}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        </div>
         <div className="table-wrap">
           <table className="table">
             <thead>
-              <tr><th>Meeting</th><th>Date</th><th className="end">Charge</th></tr>
+              <tr><th>Meeting</th><th>Date</th><th className="end">From your pack</th></tr>
             </thead>
             <tbody>
               {meetings.length === 0 && (
-                <tr><td colSpan={3} className="muted">Nothing yet. You pay nothing until a meeting is confirmed.</td></tr>
+                <tr><td colSpan={3} className="muted">Nothing yet. A meeting uses your pack only once it is held.</td></tr>
               )}
               {meetings.map(m => {
                 const p = campaigns.flatMap(c => c.prospects).find(item => item.id === m.prospectId);
@@ -219,7 +234,7 @@ function Billing() {
                     <td><span className="main">{p?.name}</span><span className="sub">{p?.company}</span></td>
                     <td>{fmtDay(state, m.day)}</td>
                     <td className="end">
-                      {m.status === 'held' ? <b>1 meeting</b> : m.status === 'missed' ? <span className="muted">No charge: missed</span> : <span className="muted">When held</span>}
+                      {m.status === 'held' ? <b>1 meeting</b> : m.status === 'missed' ? <span className="muted">Nothing: missed</span> : <span className="muted">When held</span>}
                     </td>
                   </tr>
                 );

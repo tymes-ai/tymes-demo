@@ -120,8 +120,8 @@ export function ListReview({c, running}: {c: Campaign; running?: boolean}) {
           </button>
         </div>
       )}
-      {!running && kept(c).length < 50 && (
-        <p className="small muted">{50 - kept(c).length} removed. Tymes can fill these from the next best matches at the next round.</p>
+      {!running && kept(c).length < list.length && (
+        <p className="small muted">{list.length - kept(c).length} removed. Tymes can fill these from the next best matches at the next round.</p>
       )}
     </div>
   );

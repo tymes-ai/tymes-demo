@@ -1,6 +1,6 @@
 import {Calendar, Home as HomeIcon, Inbox as InboxIcon, Lightbulb, Plug, Settings as SettingsIcon, Sparkle, Target, Pause, Play, Menu} from 'lucide-react';
 import {useEffect, useRef, useState, useSyncExternalStore} from 'react';
-import {advanceDay, allTasks, canAdvanceAny, fmtDay, forwardTo, inboxCount, launchedCampaigns, nextHint, packOf, roundDay, ROUND_LENGTH, seedRunning} from './sim/engine';
+import {advanceDay, allTasks, canAdvanceAny, fmtDay, forwardTo, inboxCount, launchedCampaigns, meetingsLeft, nextHint, packOf, roundDay, ROUND_LENGTH, seedRunning} from './sim/engine';
 import {getState, replace, reset, update, useDemo} from './sim/store';
 import {CampaignDetail, Campaigns} from './screens/campaign';
 import {Connectors, Mcps, Settings} from './screens/account';
@@ -52,7 +52,7 @@ function Shell({page, children}: {page: string; children: React.ReactNode}) {
         </nav>
         <div className="side-foot">
           <b>{state.user?.name}</b>
-          <span>{state.profile?.name} · {state.payment?.kind === 'promo' ? 'Beta' : 'Pay per meeting'}</span>
+          <span>{state.profile?.name} · {meetingsLeft(state)} {meetingsLeft(state) === 1 ? 'meeting' : 'meetings'} left</span>
         </div>
       </aside>
       <main id="main" className="page" key={page}>

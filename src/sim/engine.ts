@@ -147,9 +147,17 @@ export interface Campaign {
   roundChoice?: 'continue' | 'change';
 }
 
+export const MEETING_PACK_SIZES = [10, 20, 50, 100] as const;
+export type MeetingPackSize = (typeof MEETING_PACK_SIZES)[number];
+const LOW_PACK = 2;
+/** Every list has at least this many targets for each meeting. */
+export const TARGETS_PER_MEETING = 10;
+
 export interface DemoState {
   user: {name: string; email: string; method: string} | null;
   payment: {kind: 'promo' | 'card'; label: string} | null;
+  /** Prepaid packs of meetings, oldest first. They cover every campaign. */
+  meetingPacks: {size: MeetingPackSize; paidWith: string; bought: string}[];
   profile: {name: string; site: string; line: string; does: string; forWhom: string; stage: string} | null;
   connectors: Record<string, boolean>;
   connected: boolean;
@@ -171,6 +179,7 @@ export function initialState(): DemoState {
   return {
     user: null,
     payment: null,
+    meetingPacks: [],
     profile: null,
     connectors: {},
     connected: false,
@@ -300,12 +309,16 @@ function fillerProspect(pack: Pack, round: number, seg: Seg, order: number, boos
   };
 }
 
-function buildList(pack: Pack, round: number, heroes: readonly Hero[], segs: readonly Seg[], boost: number): Prospect[] {
+function buildList(pack: Pack, round: number, heroes: readonly Hero[], segs: readonly Seg[], boost: number, size: number): Prospect[] {
   const list = heroes.map((hero, i) => heroProspect(hero, round, i));
-  while (list.length < 50) {
+  const emails = new Set(list.map(p => p.email));
+  while (list.length < size) {
     const order = list.length;
     const next = fillerProspect(pack, round, segs[order % segs.length], order, boost);
-    if (!list.some(p => p.name === next.name)) list.push(next);
+    if (!emails.has(next.email)) {
+      emails.add(next.email);
+      list.push(next);
+    }
   }
   return list.sort((a, b) => b.fit - a.fit).map((p, i) => ({...p, order: i}));
 }
@@ -401,7 +414,7 @@ export function generateList(state: DemoState): void {
   const c = state.campaign;
   if (!c) return;
   const pack = packOf(c);
-  c.prospects = buildList(pack, 1, pack.heroes, ['core', 'core', 'big', 'core', 'off', 'core', 'big'], 0);
+  c.prospects = buildList(pack, 1, pack.heroes, ['core', 'core', 'big', 'core', 'off', 'core', 'big'], 0, targetCount(state));
   c.dropped = 2;
   c.phase = 'list';
 }
@@ -431,7 +444,7 @@ export function rerankList(state: DemoState, ask: string): string {
   const pack = packOf(c);
   const match = pack.refines.find(item => item.match.test(ask));
   if (match) return refineList(state, match.drops, match.done);
-  const text = `Re-scored the list against "${ask}". The order changed, and the count stayed at 50.`;
+  const text = `Re-scored the list against "${ask}". The order changed, and the count stayed at ${c.prospects.filter(p => p.round === c.round).length}.`;
   for (const p of c.prospects) {
     if (p.round === c.round && !p.heroKey) p.fit = Math.min(98, Math.max(40, p.fit + (hash(p.id + ask) % 7) - 3));
   }
@@ -767,7 +780,7 @@ function resolveMeetings(state: DemoState, events: string[]): void {
     m.proof = script.proof ?? 'trust';
     m.verdict = script.verdict;
     m.transcript = script.transcript;
-    say(state, events, `Meeting held: ${p.name}. ${proofName(m.proof)}. Verdict is ready, and your rating is needed.`);
+    say(state, events, `Meeting held: ${p.name}. 1 meeting used from your pack. Verdict is ready, and your rating is needed.`);
   }
 }
 
@@ -838,7 +851,47 @@ export function canAdvance(c: Campaign): boolean {
 }
 
 export function canAdvanceAny(state: DemoState): boolean {
-  return allCampaigns(state).some(canAdvance);
+  return !packBlocksClock(state) && allCampaigns(state).some(canAdvance);
+}
+
+// ----- Meeting packs -----
+
+export function buyMeetingPack(state: DemoState, size: MeetingPackSize): void {
+  const today = state.campaign ? fmtDay(state, state.campaign.day) : 'At signup';
+  state.meetingPacks.push({size, paidWith: state.payment?.label ?? '', bought: today});
+}
+
+/** Only a held meeting uses the pack. Missed and upcoming ones use nothing. */
+export function meetingsUsed(state: DemoState): number {
+  return allCampaigns(state).flatMap(c => c.meetings).filter(m => m.status === 'held').length;
+}
+
+export function meetingsBought(state: DemoState): number {
+  return state.meetingPacks.reduce((sum, pack) => sum + pack.size, 0);
+}
+
+export function meetingsLeft(state: DemoState): number {
+  return meetingsBought(state) - meetingsUsed(state);
+}
+
+/** Ten targets for each meeting in the latest pack, or in the balance if that is larger. */
+export function targetCount(state: DemoState): number {
+  const latest = state.meetingPacks.at(-1)?.size ?? 0;
+  return TARGETS_PER_MEETING * Math.max(latest, meetingsLeft(state));
+}
+
+/** Working days to send every first email, at the mailbox limit. */
+export function firstSendDays(c: Campaign): number {
+  return Math.ceil(kept(c).length / DAILY_FIRST_TOUCHES);
+}
+
+/** Work pauses at zero, and before a day that holds more meetings than the pack has left. */
+export function packBlocksClock(state: DemoState): boolean {
+  const due = allCampaigns(state)
+    .filter(canAdvance)
+    .flatMap(c => c.meetings.filter(m => m.status === 'upcoming' && m.day <= c.day)).length;
+  const left = meetingsLeft(state);
+  return left <= 0 || due > left;
 }
 
 const ROUTINE_EVENT = /^(\d+ messages went out\. No new replies|A quiet day)/;
@@ -847,7 +900,7 @@ const ROUTINE_EVENT = /^(\d+ messages went out\. No new replies|A quiet day)/;
 export function advanceDay(state: DemoState): void {
   const focus = state.campaign;
   const running = allCampaigns(state).filter(canAdvance);
-  if (!running.length) return;
+  if (!running.length || packBlocksClock(state)) return;
   const named = running.flatMap(c => {
     state.campaign = c;
     const events = advanceOne(state, c);
@@ -925,10 +978,10 @@ export function chooseRound(state: DemoState, choice: 'continue' | 'change' | 's
   c.roundChoice = choice;
   const heroes = c.round === 2 ? pack.round2 : [];
   const segs: readonly Seg[] = choice === 'change' ? ['core'] : ['core', 'core', 'big', 'core', 'off'];
-  c.prospects.push(...buildList(pack, c.round, heroes, segs, choice === 'change' ? 8 : 2));
+  c.prospects.push(...buildList(pack, c.round, heroes, segs, choice === 'change' ? 8 : 2, targetCount(state)));
   c.refined = [];
   c.phase = 'review';
-  state.lastEvents = [`Tymes wrote a new list of 50 for round ${c.round}, using what you learned. Review it before anything goes out.`];
+  state.lastEvents = [`Tymes wrote a new list of ${targetCount(state)} for round ${c.round}, using what you learned. Review it before anything goes out.`];
   state.log.unshift({day: c.day, text: `Round ${c.round} list is ready for review.`});
 }
 
@@ -936,7 +989,7 @@ export function chooseRound(state: DemoState, choice: 'continue' | 'change' | 's
 
 export interface Task {
   id: string;
-  kind: 'draft' | 'slot' | 'rate' | 'brief' | 'conflict' | 'round' | 'budget' | 'review';
+  kind: 'draft' | 'slot' | 'rate' | 'brief' | 'conflict' | 'round' | 'budget' | 'pack' | 'review';
   title: string;
   detail: string;
   href: string;
@@ -990,15 +1043,21 @@ export function getTasks(state: DemoState): Task[] {
   if (budgetUsed(state) >= 80) {
     tasks.push({id: 'budget', kind: 'budget', title: 'Your AI budget is over 80%', detail: 'At 100%, AI jobs pause, except meetings in progress.', href: '#/settings/budget', action: 'Open budget'});
   }
+  const left = meetingsLeft(state);
+  if (packBlocksClock(state)) {
+    tasks.push({id: 'pack', kind: 'pack', title: left <= 0 ? 'Your meeting pack is used up' : `Only ${left} ${left === 1 ? 'meeting' : 'meetings'} left, and more are due`, detail: 'Work is paused until you buy another pack.', href: '#/settings/billing', action: 'Buy a pack'});
+  } else if (left <= LOW_PACK) {
+    tasks.push({id: 'pack', kind: 'pack', title: `${left} ${left === 1 ? 'meeting' : 'meetings'} left in your pack`, detail: 'Work pauses when the pack runs out.', href: '#/settings/billing', action: 'Buy a pack'});
+  }
   return tasks;
 }
 
-/** Tasks from every campaign. The budget is the customer's, so it appears once. */
+/** Tasks from every campaign. The budget and the pack are the customer's, so each appears once. */
 export function allTasks(state: DemoState): (Task & {goal: Goal})[] {
   const seen = new Set<string>();
   return launchedCampaigns(state).flatMap(c =>
     getTasks({...state, campaign: c, others: allCampaigns(state).filter(o => o !== c)})
-      .filter(t => t.kind !== 'budget' || !seen.has(t.kind))
+      .filter(t => (t.kind !== 'budget' && t.kind !== 'pack') || !seen.has(t.kind))
       .map(t => {
         seen.add(t.kind);
         return {...t, goal: c.goal};
@@ -1017,6 +1076,7 @@ export function inboxCount(state: DemoState): number {
 export function nextHint(state: DemoState): string {
   const c = state.campaign;
   if (!c || c.phase === 'goal') return '';
+  if (packBlocksClock(state)) return 'Work is paused. Buy another meeting pack in Settings, Billing.';
   if (c.phase === 'stopped' && !canAdvanceAny(state)) return 'The campaign is stopped.';
   if (c.phase === 'review') return `Open Act to review the round ${c.round} list, then launch it.`;
   const tasks = allTasks(state);
@@ -1032,6 +1092,7 @@ export function seedRunning(goal: Goal, targetRoundDay: number): DemoState {
   const state = initialState();
   state.user = {name: FOUNDER.name, email: FOUNDER.email, method: 'Google'};
   state.payment = {kind: 'promo', label: 'Promo code BETA2026'};
+  buyMeetingPack(state, 20);
   startProfile(state);
   state.connectors = {gmail: true, gcal: true, meet: true, tymes: true, linkedin: true};
   state.connected = true;
@@ -1048,7 +1109,7 @@ export function seedRunning(goal: Goal, targetRoundDay: number): DemoState {
 export function forwardTo(state: DemoState, targetRoundDay: number): void {
   const focus = state.campaign;
   if (!focus) return;
-  while (roundDay(focus) < targetRoundDay && canAdvance(focus)) {
+  while (roundDay(focus) < targetRoundDay && canAdvance(focus) && !packBlocksClock(state)) {
     for (const c of allCampaigns(state).filter(canAdvance)) {
       state.campaign = c;
       for (const t of [...c.threads]) {
