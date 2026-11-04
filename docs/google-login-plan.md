@@ -126,8 +126,7 @@ An admin page can follow if people other than Vercel project members need access
 | `src/auth/` | New: `AuthGate`, the login page, and the event helper |
 | `src/main.tsx` | Wrap `App` in `AuthGate` |
 | `src/App.tsx` | Remove the `/login` route, and keep the menu's restart signed in |
-| `src/screens/setup.tsx` | Remove the simulated `Login`, and send "Start from login" to `/payment` |
-| `src/sim/engine.ts` | `user.method` no longer depends on a button choice |
+| `src/screens/setup.tsx` | Remove the simulated `Login`, and have "Start from login" set Lena as the user and go to `/payment` |
 | `README.md` | Update setup and deployment, and the walkthrough's login step |
 | `package.json` | Add `google-auth-library` and the database driver |
 
