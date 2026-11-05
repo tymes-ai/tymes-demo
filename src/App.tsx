@@ -4,7 +4,8 @@ import {advanceDay, allTasks, canAdvanceAny, fmtDay, forwardTo, inboxCount, laun
 import {getState, replace, reset, update, useDemo} from './sim/store';
 import {CampaignDetail, Campaigns} from './screens/campaign';
 import {Connectors, Mcps, Settings} from './screens/account';
-import {CampaignSetup, Company, Connect, currentSetupRoute, Login, Payment, Start} from './screens/setup';
+import {SignOut} from './auth/AuthGate';
+import {CampaignSetup, Company, Connect, currentSetupRoute, Payment, Start, startSetup} from './screens/setup';
 import {Home, Inbox, Insights, Meetings} from './screens/work';
 import {go, Logo} from './ui/parts';
 
@@ -160,8 +161,10 @@ function Clock() {
             <button type="button" disabled={!canJump(7)} onClick={() => jump(7)}>Day 7: meetings on the calendar</button>
             <button type="button" disabled={!canJump(ROUND_LENGTH)} onClick={() => jump(ROUND_LENGTH)}>Day {ROUND_LENGTH}: round done, decide</button>
             <h3>Start over</h3>
-            <button type="button" onClick={() => { setMenu(false); setPlaying(false); reset(); go('/login'); }}>Restart from login</button>
+            <button type="button" onClick={() => { setMenu(false); setPlaying(false); reset(); startSetup(); }}>Restart setup</button>
             <button type="button" onClick={() => { setMenu(false); setPlaying(false); reset(); go('/'); }}>Back to the first page</button>
+            <h3>Account</h3>
+            <SignOut />
           </div>
         )}
       </div>
@@ -169,12 +172,12 @@ function Clock() {
   );
 }
 
-function SetupGuard({route, children}: {route: string; children: React.ReactNode}) {
+function SetupGuard({children}: {children: React.ReactNode}) {
   // Sends a deep link to the furthest setup step this browser has reached.
   const s = useDemo();
-  const allowed = !(route !== 'login' && !s.user);
+  const allowed = Boolean(s.user);
   useEffect(() => {
-    if (!allowed) go('/login');
+    if (!allowed) go('/');
   }, [allowed]);
   return allowed ? <>{children}</> : null;
 }
@@ -191,14 +194,13 @@ export function App() {
   if (!first) return <Start />;
   const c = state.campaign;
 
-  if (['login', 'payment', 'company', 'connect', 'campaign'].includes(first)) {
+  if (['payment', 'company', 'connect', 'campaign'].includes(first)) {
     if (first === 'campaign' && c && (c.phase === 'running' || c.phase === 'review' || c.phase === 'stopped')) {
       go('/home');
       return null;
     }
     return (
-      <SetupGuard route={first}>
-        {first === 'login' && <Login />}
+      <SetupGuard>
         {first === 'payment' && <Payment />}
         {first === 'company' && <Company />}
         {first === 'connect' && <Connect />}

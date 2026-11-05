@@ -1,12 +1,13 @@
 # Tymes
 
 The whole Tymes loop in the browser, as a static site with no backend. State is
-saved in `localStorage`.
+saved in `localStorage`. Visitors sign in with Clerk before they see the demo.
 
 ## Run it
 
 ```bash
 npm install
+echo 'VITE_CLERK_PUBLISHABLE_KEY=pk_test_...' > .env.local   # from the Clerk dashboard
 npm run dev       # http://localhost:3200
 ```
 
@@ -21,11 +22,16 @@ npx vercel deploy --prod     # or: npx netlify deploy --dir=dist --prod
 
 Dragging `dist/` into Netlify Drop also works. The page sets `noindex`.
 
+The build fails without `VITE_CLERK_PUBLISHABLE_KEY`, so set it on the host too.
+Sign-in providers are turned on in the Clerk dashboard, and it lists who signed in.
+On Vercel, use the `pk_live` key for Production and the `pk_test` key for Preview and
+Development. `public/privacy.html` is the privacy policy, outside the login.
+
 ## Walk through it
 
-1. **First page**: "Start from login" walks the setup. "Open a running campaign"
+1. **First page**: "Start setup" walks the setup. "Open a running campaign"
    skips to day 7.
-2. **Setup**: log in, buy a meeting pack, company profile, connect accounts, goal, ISP,
+2. **Setup**: buy a meeting pack, company profile, connect accounts, goal, ISP,
    targets (10 for every meeting in the pack), messages, start outreach. All three goals have their own story.
 3. **The bar at the bottom** moves the story:
    - **Next day** moves the clock one working day

@@ -1,5 +1,6 @@
 import {useEffect, useState} from 'react';
 import {buyMeetingPack, cancelNewCampaign, COMPANY, firstSendDays, FOUNDER, generateList, kept, launch, MEETING_PACK_SIZES, newCampaign, openConflicts, packOf, PACKS, seedRunning, startProfile, subjectOf, stepBody, TARGETS_PER_MEETING, targetCount, type Campaign, type Goal, type MeetingPackSize, type Prospect} from '../sim/engine';
+import {SignOut} from '../auth/AuthGate';
 import {getState, replace, update, useDemo} from '../sim/store';
 import {Arrow, Band, Field, Figure, Glyph, go, Logo, Shape, Tabs, Working, type ShapeName} from '../ui/parts';
 import {ListReview} from './prospects';
@@ -13,6 +14,7 @@ export function Start() {
     <div className="start" id="main">
       <header className="start-nav">
         <Logo />
+        <SignOut className="btn ghost" />
       </header>
       <section className="start-hero">
         <div>
@@ -21,8 +23,8 @@ export function Start() {
             A founder enters a website. Tymes finds the right people, writes to them after approval, puts confirmed meetings on the calendar, and says plainly who is a real potential customer.
           </p>
           <div className="acts">
-            <button type="button" className="btn" onClick={() => go('/login')}>
-              Start from login <Arrow />
+            <button type="button" className="btn" onClick={startSetup}>
+              Start setup <Arrow />
             </button>
             <button
               type="button"
@@ -88,35 +90,14 @@ function Frame({step, children}: {step: number; children: React.ReactNode}) {
   );
 }
 
-// ----- Log in -----
+// ----- Start of the story -----
 
-export function Login() {
-  const signIn = (method: string) => {
-    update(s => {
-      s.user = {name: FOUNDER.name, email: FOUNDER.email, method};
-    });
-    go('/payment');
-  };
-  return (
-    <div className="setup">
-      <div className="login-grid">
-        <div className="login-left" id="main">
-          <Logo />
-          <div className="login-box">
-            <h1 className="h-step">Log in to Tymes.</h1>
-            <button type="button" className="btn block" onClick={() => signIn('Google')}>Continue with Google</button>
-            <button type="button" className="btn ghost block" onClick={() => signIn('Apple')}>Continue with Apple</button>
-            <button type="button" className="btn ghost block" onClick={() => signIn('Email')}>Continue with email</button>
-          </div>
-          <span />
-        </div>
-        <div className="login-right dark">
-          <p>Pay only for the meetings you had.</p>
-          <small>Buy a pack of 10, 20, 50, or 100 up front. No seats.</small>
-        </div>
-      </div>
-    </div>
-  );
+/** Sign-in happens before the demo opens, so the story starts with its founder already logged in. */
+export function startSetup() {
+  update(s => {
+    s.user = {name: FOUNDER.name, email: FOUNDER.email, method: 'Google'};
+  });
+  go('/payment');
 }
 
 // ----- Payment -----
@@ -715,7 +696,7 @@ function LaunchStep({c}: {c: Campaign}) {
 
 export function currentSetupRoute(): string {
   const s = getState();
-  if (!s.user) return '/login';
+  if (!s.user) return '/';
   if (!s.payment) return '/payment';
   if (!s.connected) return s.profile ? '/connect' : '/company';
   if (!s.campaign || s.campaign.phase !== 'running') {

@@ -1,6 +1,8 @@
 # Plan: Google login and visit tracking
 
-Status: proposed. Nothing here is built yet.
+Status: replaced for now. Sign-in uses Clerk, with no backend, and Clerk's
+dashboard shows who signed in. The database and progress tracking below are not
+built, and this plan's hand-built Google login no longer applies.
 
 ## Goal
 
