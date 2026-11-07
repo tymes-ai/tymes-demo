@@ -1,8 +1,9 @@
 import {useEffect, useState} from 'react';
+import {createPortal} from 'react-dom';
 import {buyMeetingPack, cancelNewCampaign, COMPANY, firstSendDays, FOUNDER, generateList, kept, launch, MEETING_PACK_SIZES, newCampaign, openConflicts, packOf, PACKS, seedRunning, startProfile, subjectOf, stepBody, TARGETS_PER_MEETING, targetCount, type Campaign, type Goal, type MeetingPackSize, type Prospect} from '../sim/engine';
 import {SignOut} from '../auth/AuthGate';
 import {getState, replace, update, useDemo} from '../sim/store';
-import {Arrow, Band, Field, Figure, Glyph, go, Logo, Shape, Tabs, Working, type ShapeName} from '../ui/parts';
+import {Arrow, Band, Field, Figure, go, Logo, Shape, Tabs, Working, type ShapeName} from '../ui/parts';
 import {ListReview} from './prospects';
 
 // ----- Start -----
@@ -45,7 +46,8 @@ export function Start() {
         </div>
         <Figure label="Four shapes assemble into a figure: a blue square, a yellow triangle, a green half-circle, and last, a red circle for the verdict" />
       </section>
-      <ul className="start-loop">
+      <p className="loop-title">How one round works</p>
+      <ol className="start-loop">
         {(
           [
             ['square', 'Find', 'Profile, ISP, and 10 targets per meeting to approve.'],
@@ -60,7 +62,7 @@ export function Start() {
             <span>{line}</span>
           </li>
         ))}
-      </ul>
+      </ol>
       <Band />
     </div>
   );
@@ -75,13 +77,13 @@ function Frame({step, children}: {step: number; children: React.ReactNode}) {
     <div className="setup">
       <header className="setup-top">
         <Logo size={22} />
-        <ol className="crumbs" aria-label="Setup steps">
-          {STEPS.map((name, i) => (
-            <li key={name} className={i === step ? 'now' : i < step ? 'past' : undefined} aria-current={i === step ? 'step' : undefined}>
-              {name}
-            </li>
-          ))}
-        </ol>
+        {/* A progress readout, not navigation: nothing here is clickable, so nothing looks like a link. */}
+        <p className="steps">
+          <span className="stepbar" aria-hidden="true">
+            {STEPS.map((name, i) => <i key={name} className={i <= step ? 'on' : undefined} />)}
+          </span>
+          <span>Step {step + 1} of {STEPS.length}: <b>{STEPS[step]}</b></span>
+        </p>
       </header>
       <main id="main" className="setup-body">
         {children}
@@ -116,7 +118,6 @@ export function Payment() {
     <Frame step={1}>
       <div className="setup-head">
         <h1 className="h-step">Buy a pack of meetings before work starts.</h1>
-        <Glyph shapes={['box', 'openbox']} />
       </div>
       <div className="split75">
         <div className="stack">
@@ -144,9 +145,9 @@ export function Payment() {
         <div className="card">
           <div className="ch c2">What you pay for</div>
           <ul className="rows">
-            <li><span><b>Meetings you had</b><br /><span className="small muted">The only thing that uses your pack.</span></span><span className="pill">Uses 1</span></li>
-            <li><span><b>Outreach, replies, proposed times</b><br /><span className="small muted">All the work to get there.</span></span><span className="pill o">Uses 0</span></li>
-            <li><span><b>Missed meetings</b><br /><span className="small muted">Tymes finds a new time.</span></span><span className="pill o">Uses 0</span></li>
+            <li><span><b>Meetings you had</b><br /><span className="small muted">The only thing that uses your pack.</span></span><span className="uses">Uses 1</span></li>
+            <li><span><b>Outreach, replies, proposed times</b><br /><span className="small muted">All the work to get there.</span></span><span className="uses none">Uses 0</span></li>
+            <li><span><b>Missed meetings</b><br /><span className="small muted">Tymes finds a new time.</span></span><span className="uses none">Uses 0</span></li>
           </ul>
         </div>
       </div>
@@ -183,7 +184,6 @@ export function Company() {
     <Frame step={2}>
       <div className="setup-head">
         <h1 className="h-step">{p ? 'Here is your company, as Tymes reads it.' : 'Start with your website.'}</h1>
-        <Glyph shapes={[['square', false], ['triangle', true], ['half', true], ['sun', true]]} />
       </div>
       {!p && (
         <div className="split57">
@@ -269,40 +269,102 @@ function ToggleRow({label, sub, on, onToggle}: {label: string; sub: string; on: 
 
 export const SETUP_CONNECTORS: readonly {id: string; name: string; sub: string; required?: boolean}[] = [
   {id: 'gmail', name: 'Gmail', sub: 'Email goes from your own mailbox', required: true},
-  {id: 'gcal', name: 'Google Calendar', sub: 'Confirmed meetings land here', required: true},
-  {id: 'meet', name: 'Google Meet', sub: 'Meeting links and attendance'},
+  {id: 'gcal', name: 'Google Calendar', sub: 'Confirmed meetings land here, with a Google Meet link', required: true},
   {id: 'linkedin', name: 'LinkedIn', sub: 'The second channel in a sequence'},
-  {id: 'crm', name: 'CRM', sub: 'Optional. Skip people you already know'},
-  {id: 'sheets', name: 'Lead sheets', sub: 'Optional. Tymes lead data works without it'},
 ];
+
+/** What each account lets Tymes do, shown before it connects. */
+const PERMISSIONS: Record<string, {name: string; account: string; can: readonly string[]}> = {
+  gmail: {
+    name: 'Gmail',
+    account: `${FOUNDER.name} · ${FOUNDER.email}`,
+    can: ['Send the emails you approve, from your own address', 'Read the replies to those emails, to label them and draft answers'],
+  },
+  gcal: {
+    name: 'Google Calendar',
+    account: `${FOUNDER.name} · ${FOUNDER.email}`,
+    can: ['See when you are free, to offer meeting times', 'Add confirmed meetings, each with a Google Meet link'],
+  },
+  linkedin: {
+    name: 'LinkedIn',
+    account: FOUNDER.name,
+    can: ['Send the notes you approve, from your own profile', 'Stay within your account\'s daily limits'],
+  },
+};
+
+export function connectedAs(id: string): string | undefined {
+  return PERMISSIONS[id]?.account;
+}
 
 export function ConnectButton({id}: {id: string}) {
   const state = useDemo();
   const [busy, setBusy] = useState(false);
+  const [asking, setAsking] = useState(false);
   const on = Boolean(state.connectors[id]);
+  const connect = () => {
+    setAsking(false);
+    setBusy(true);
+    window.setTimeout(() => {
+      update(s => {
+        s.connectors[id] = true;
+        // Meetings get their Google Meet link through the calendar.
+        if (id === 'gcal') s.connectors.meet = true;
+      });
+      setBusy(false);
+    }, 650);
+  };
   return (
-    <button
-      type="button"
-      className={on ? 'btn ghost sm' : 'btn sm'}
-      disabled={busy}
-      onClick={() => {
-        if (on) {
-          update(s => {
-            s.connectors[id] = false;
-          });
-          return;
-        }
-        setBusy(true);
-        window.setTimeout(() => {
-          update(s => {
-            s.connectors[id] = true;
-          });
-          setBusy(false);
-        }, 650);
-      }}
-    >
-      {busy ? 'Connecting' : on ? 'Connected' : 'Connect'}
-    </button>
+    <>
+      <button
+        type="button"
+        className={on ? 'btn ghost sm' : 'btn sm'}
+        disabled={busy}
+        onClick={() => {
+          if (on) {
+            update(s => {
+              s.connectors[id] = false;
+            });
+            return;
+          }
+          if (PERMISSIONS[id]) setAsking(true);
+          else connect();
+        }}
+      >
+        {busy ? 'Connecting' : on ? 'Connected' : 'Connect'}
+      </button>
+      {asking && <Allow id={id} onAllow={connect} onCancel={() => setAsking(false)} />}
+    </>
+  );
+}
+
+/** Asks before an account connects, and says plainly what Tymes will do with it. */
+function Allow({id, onAllow, onCancel}: {id: string; onAllow: () => void; onCancel: () => void}) {
+  const p = PERMISSIONS[id];
+  useEffect(() => {
+    const close = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onCancel();
+    };
+    window.addEventListener('keydown', close);
+    return () => window.removeEventListener('keydown', close);
+  }, [onCancel]);
+  // Drawn at the page level, so it covers the timeline bar and no list styles reach it.
+  return createPortal(
+    <div className="modal-back" onClick={onCancel}>
+      <div className="modal" role="dialog" aria-modal="true" aria-labelledby={`allow-${id}`} onClick={e => e.stopPropagation()}>
+        <h2 id={`allow-${id}`}>Connect {p.name}?</h2>
+        <p className="muted small">{p.account}</p>
+        <p className="b" style={{marginTop: 18}}>Tymes will be able to:</p>
+        <ul className="perm">
+          {p.can.map(line => <li key={line}>{line}</li>)}
+        </ul>
+        <p className="small muted" style={{marginTop: 14}}>Nothing goes out until you approve it. You can disconnect at any time.</p>
+        <div className="row-end" style={{marginTop: 20}}>
+          <button type="button" className="btn" autoFocus onClick={onAllow}>Allow</button>
+          <button type="button" className="btn ghost" onClick={onCancel}>Cancel</button>
+        </div>
+      </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -313,7 +375,6 @@ export function Connect() {
     <Frame step={3}>
       <div className="setup-head">
         <h1 className="h-step">Connect the accounts Tymes works from.</h1>
-        <Glyph shapes={['triangle']} />
       </div>
       <div className="split75">
         <div>
@@ -322,7 +383,7 @@ export function Connect() {
               <div key={item.id} style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, padding: '11px 0', borderBottom: '1.5px solid var(--hair)'}}>
                 <span>
                   <b style={{fontWeight: 600, display: 'block'}}>{item.name}{item.required && <span className="muted small"> · needed</span>}</b>
-                  <small className="muted small">{item.sub}</small>
+                  <small className="muted small">{state.connectors[item.id] ? `Connected as ${connectedAs(item.id)}` : item.sub}</small>
                 </span>
                 <ConnectButton id={item.id} />
               </div>
@@ -381,7 +442,6 @@ function GoalStep() {
     <Frame step={4}>
       <div className="setup-head">
         <h1 className="h-step">Who do you want to meet?</h1>
-        <Glyph shapes={['square', 'half', 'triangle']} />
       </div>
       <div style={{marginTop: 36, maxWidth: 880}}>
         <div className="choice-list" role="radiogroup" aria-label="Campaign goal">
@@ -416,7 +476,6 @@ function WhoStep({c}: {c: Campaign}) {
     <Frame step={4}>
       <div className="setup-head">
         <h1 className="h-step">Tell Tymes who to meet and what to learn.</h1>
-        <Glyph shapes={['square']} />
       </div>
       <div className="split57">
         <div className="stack">
@@ -479,7 +538,6 @@ function IspStep({c}: {c: Campaign}) {
     <Frame step={4}>
       <div className="setup-head">
         <h1 className="h-step">Your ISP, and who it finds.</h1>
-        <Glyph shapes={['square', ['triangle', true]]} />
       </div>
       <div className="split57">
         <div className="stack">
@@ -564,7 +622,6 @@ function ListStep({c}: {c: Campaign}) {
           <h1 className="h-step">{count} targets. Approve and refine.</h1>
           <p className="lede" style={{marginTop: 12}}>Nobody hears from Tymes until you approve this list, then the messages.</p>
         </div>
-        <Glyph shapes={['square', ['triangle', true]]} />
       </div>
       <div style={{marginTop: 28}}>
         <ListReview c={c} />
@@ -643,7 +700,6 @@ function MessagesStep({c}: {c: Campaign}) {
           <h1 className="h-step">{count} personal messages. Read as many as you like.</h1>
           <p className="lede" style={{marginTop: 12}}>Each one opens with something true about that person. Change anything.</p>
         </div>
-        <Glyph shapes={['square', 'triangle']} />
       </div>
       <div style={{marginTop: 28}}>
         <MessageReview c={c} list={kept(c)} />
