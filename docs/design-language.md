@@ -30,7 +30,7 @@ Everything else is flat and never reacts.
 | Bold text with a small colored square | A card header | What you pay for, Campaign ISP |
 | Small grey label with a small colored square | A tag | Interested, Customer interviews |
 | Plain text | A value | Uses 1 |
-| Grey block with a dark bar on the left | A note | Ratings moved prospects |
+| Grey block with a dark bar on the left | A note | Check who a flagged prospect is |
 | Large grey, dark, blue, or green block | A summary band | 18 meetings left in your pack |
 | Thin bar and "Step 2 of 5" | Setup progress | The top of each setup step |
 

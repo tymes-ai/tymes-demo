@@ -19,9 +19,9 @@ export function Start() {
       </header>
       <section className="start-hero">
         <div>
-          <h1 className="h-poster">See one round, from website to verdict.</h1>
+          <h1 className="h-poster">See one round, from website to booked meetings.</h1>
           <p className="lede" style={{marginTop: 26}}>
-            A founder enters a website. Tymes finds the right people, writes to them after approval, puts confirmed meetings on the calendar, and says plainly who is a real potential customer.
+            A founder enters a website. Tymes finds the right people, writes to them after approval, and puts confirmed meetings on the calendar.
           </p>
           <div className="acts">
             <button type="button" className="btn" onClick={startSetup}>
@@ -44,7 +44,7 @@ export function Start() {
             )}
           </div>
         </div>
-        <Figure label="Four shapes assemble into a figure: a blue square, a yellow triangle, a green half-circle, and last, a red circle for the verdict" />
+        <Figure label="Four shapes assemble into a figure: a blue square, a yellow triangle, a green half-circle, and last, a red circle" />
       </section>
       <p className="loop-title">How one round works</p>
       <ol className="start-loop">
@@ -52,8 +52,7 @@ export function Start() {
           [
             ['square', 'Find', 'Profile, ISP, and 10 targets per meeting to approve.'],
             ['triangle', 'Reach', 'Personal messages, by email and LinkedIn.'],
-            ['half', 'Meet', 'Confirmed meetings, each with a brief.'],
-            ['sun', 'Learn', 'A verdict per person, and a sharper next round.'],
+            ['half', 'Meet', 'Confirmed meetings, each with a brief, and your rating after.'],
           ] as const
         ).map(([shape, name, line]) => (
           <li key={name}>

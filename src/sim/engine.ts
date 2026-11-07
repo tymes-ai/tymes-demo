@@ -780,7 +780,7 @@ function resolveMeetings(state: DemoState, events: string[]): void {
     m.proof = script.proof ?? 'trust';
     m.verdict = script.verdict;
     m.transcript = script.transcript;
-    say(state, events, `Meeting held: ${p.name}. 1 meeting used from your pack. Verdict is ready, and your rating is needed.`);
+    say(state, events, `Meeting held: ${p.name}. 1 meeting used from your pack. Rate how it went.`);
   }
 }
 
@@ -927,7 +927,7 @@ function advanceOne(state: DemoState, c: Campaign): string[] {
     events.push(sendsToday ? `${sendsToday} messages went out. No new replies today.` : 'A quiet day. Sequences are waiting on replies.');
   }
   if (roundDay(c) === ROUND_LENGTH) {
-    say(state, events, `Round ${c.round} is done. Decide what happens next: continue, change the ISP, or stop.`);
+    say(state, events, `Round ${c.round} is done. Decide what happens next: continue, or stop.`);
   }
   return events;
 }
@@ -940,15 +940,8 @@ export function rateMeeting(state: DemoState, id: string, rating: 'good' | 'bad'
   if (!c || !meeting) return;
   const p = c.prospects.find(item => item.id === meeting.prospectId);
   if (!p) return;
-  const notContacted = kept(c).filter(item => item.seg === p.seg && item.id !== p.id && !threadOf(c, item.id));
-  const shift = rating === 'good' ? 3 : -5;
-  for (const item of notContacted) {
-    item.prevFit = item.prevFit ?? item.fit;
-    item.fit = Math.max(30, Math.min(98, item.fit + shift));
-  }
   meeting.rating = rating;
-  const text = `Your rating of ${p.name} moved ${notContacted.length} similar prospects ${rating === 'good' ? 'up' : 'down'} the list.`;
-  meeting.ratingEffect = text;
+  const text = `You rated your meeting with ${p.name}: ${rating === 'good' ? 'a good fit' : 'not a fit'}.`;
   state.log.unshift({day: c.day, text});
   state.lastEvents = [text];
 }
@@ -981,7 +974,7 @@ export function chooseRound(state: DemoState, choice: 'continue' | 'change' | 's
   c.prospects.push(...buildList(pack, c.round, heroes, segs, choice === 'change' ? 8 : 2, targetCount(state)));
   c.refined = [];
   c.phase = 'review';
-  state.lastEvents = [`Tymes wrote a new list of ${targetCount(state)} for round ${c.round}, using what you learned. Review it before anything goes out.`];
+  state.lastEvents = [`Tymes wrote a fresh list of ${targetCount(state)} for round ${c.round}, with the same ISP. Review it before anything goes out.`];
   state.log.unshift({day: c.day, text: `Round ${c.round} list is ready for review.`});
 }
 
@@ -1023,7 +1016,7 @@ export function getTasks(state: DemoState): Task[] {
     const p = find(m.prospectId);
     if (!p) continue;
     if (m.status === 'held' && !m.rating) {
-      tasks.push({id: `rate-${m.id}`, kind: 'rate', title: `Rate your meeting with ${p.name}`, detail: 'Your rating adjusts the prospect list.', href: `#/meetings/${m.id}`, action: 'Rate'});
+      tasks.push({id: `rate-${m.id}`, kind: 'rate', title: `Rate your meeting with ${p.name}`, detail: 'Was it a good fit?', href: `#/meetings/${m.id}`, action: 'Rate'});
     }
     if (m.status === 'upcoming' && m.day <= c.day + 1) {
       tasks.push({id: `brief-${m.id}`, kind: 'brief', title: `Read the brief for ${p.name}`, detail: `${fmtDay(state, m.day)} at ${m.time}, on ${m.platform}.`, href: `#/meetings/${m.id}`, action: 'Open brief'});
@@ -1034,7 +1027,7 @@ export function getTasks(state: DemoState): Task[] {
       tasks.push({id: `conflict-${p.id}`, kind: 'conflict', title: `Check who ${p.name} is`, detail: p.conflict ?? '', href: '#/campaigns/prospects', action: 'Check'});
     }
     if (roundDay(c) >= ROUND_LENGTH) {
-      tasks.push({id: 'round', kind: 'round', title: `Round ${c.round} is done: decide what is next`, detail: 'Continue, change the ISP, or stop.', href: '#/campaigns/act', action: 'Decide'});
+      tasks.push({id: 'round', kind: 'round', title: `Round ${c.round} is done: decide what is next`, detail: 'Continue with a fresh list, or stop.', href: '#/campaigns/act', action: 'Decide'});
     }
   }
   if (c.phase === 'review') {

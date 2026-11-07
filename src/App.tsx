@@ -1,4 +1,4 @@
-import {Calendar, Home as HomeIcon, Inbox as InboxIcon, Lightbulb, Plug, Settings as SettingsIcon, Sparkle, Target, Pause, Play, Menu} from 'lucide-react';
+import {Calendar, Home as HomeIcon, Inbox as InboxIcon, Plug, Settings as SettingsIcon, Sparkle, Target, Pause, Play, Menu} from 'lucide-react';
 import {useEffect, useRef, useState, useSyncExternalStore} from 'react';
 import {advanceDay, allTasks, canAdvanceAny, fmtDay, forwardTo, inboxCount, launchedCampaigns, meetingsLeft, nextHint, packOf, roundDay, ROUND_LENGTH, seedRunning} from './sim/engine';
 import {getState, replace, reset, update, useDemo} from './sim/store';
@@ -6,7 +6,7 @@ import {CampaignDetail, Campaigns} from './screens/campaign';
 import {Connectors, Mcps, Settings} from './screens/account';
 import {SignOut} from './auth/AuthGate';
 import {CampaignSetup, Company, Connect, currentSetupRoute, Payment, Start, startSetup} from './screens/setup';
-import {Home, Inbox, Insights, Meetings} from './screens/work';
+import {Home, Inbox, Meetings} from './screens/work';
 import {go, Logo} from './ui/parts';
 
 function subscribeHash(listener: () => void) {
@@ -24,7 +24,6 @@ const NAV = [
   ['campaigns', 'Campaigns', Target],
   ['inbox', 'Inbox', InboxIcon],
   ['meetings', 'Meetings', Calendar],
-  ['insights', 'Insights', Lightbulb],
   ['connectors', 'Connectors', Plug],
   ['mcps', 'MCPs', Sparkle],
   ['settings', 'Settings', SettingsIcon],
@@ -223,7 +222,6 @@ export function App() {
         {first === 'campaigns' && (second ? <CampaignDetail tabKey={second} /> : <Campaigns />)}
         {first === 'inbox' && <Inbox route={second} />}
         {first === 'meetings' && <Meetings route={second} />}
-        {first === 'insights' && <Insights />}
         {first === 'connectors' && <Connectors />}
         {first === 'mcps' && <Mcps />}
         {first === 'settings' && <Settings tabKey={second} />}

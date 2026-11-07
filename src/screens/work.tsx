@@ -35,7 +35,7 @@ export function Pipeline({state, c}: {state: DemoState; c: Campaign}) {
     ['triangle', s.contacted, 'Contacted', `${pct(s.opened, s.contacted)} opened`],
     ['triangle', s.replied, 'Replied', `${pct(s.replied, s.contacted)} of contacted`],
     ['half', s.booked, 'Booked', `${pct(s.booked, s.replied)} of replies`],
-    ['half', s.held, 'Held', `${s.yes} real ${packOf(c).personNoun}${s.yes === 1 ? '' : 's'}`],
+    ['half', s.held, 'Held', `${pct(s.held, s.booked)} of booked`],
   ];
   return (
     <div className="pipe" aria-label={`Round ${c.round} pipeline`}>
@@ -419,18 +419,11 @@ function BriefCard({state, c, m}: {state: DemoState; c: Campaign; m: Meeting}) {
             {p.name.split(' ')[0]} did not join, so there is no charge. {thread?.draft ? <>Tymes drafted a new time. <a href={`#/inbox/${p.id}`}>Review it</a></> : 'Tymes offered a new time.'}
           </div>
         )}
-        {m.status === 'held' && m.verdict && (
+        {m.status === 'held' && (
           <>
-            <div className="verdict">
-              <Shape name={m.verdict.yes ? 'sun' : 'ring'} />
-              <div>
-                <b>{m.verdict.yes ? pack.yesLabel : 'Not a fit'}</b>
-                <span>{m.verdict.reason}</span>
-              </div>
-            </div>
             {m.rating ? (
-              <p className="small" style={{marginTop: 12}}>
-                <b>You rated this {m.rating === 'good' ? 'a good fit' : 'not a fit'}.</b> <span className="muted">{m.ratingEffect}</span>
+              <p className="small" style={{marginTop: 16}}>
+                <b>You rated this {m.rating === 'good' ? 'a good fit' : 'not a fit'}.</b>
               </p>
             ) : (
               <div className="rate">
@@ -444,24 +437,10 @@ function BriefCard({state, c, m}: {state: DemoState; c: Campaign; m: Meeting}) {
         )}
       </div>
       <div className="g">
-        {m.status === 'held' && m.transcript ? (
-          <>
-            <h4 className="b" style={{marginBottom: 6}}>Transcript</h4>
-            <ul className="transcript">
-              {m.transcript.map(([speaker, line], i) => (
-                <li key={i}><b>{speaker.split(' ')[0]}</b><span>{line}</span></li>
-              ))}
-            </ul>
-            <p className="small muted" style={{marginTop: 10}}>Imported from your note-taker.</p>
-          </>
-        ) : (
-          <>
-            <h4 className="b" style={{marginBottom: 6}}>{pack.guideName}</h4>
-            <ol className="q-list">
-              {c.guide.map(q => <li key={q}>{q}</li>)}
-            </ol>
-          </>
-        )}
+        <h4 className="b" style={{marginBottom: 6}}>{pack.guideName}</h4>
+        <ol className="q-list">
+          {c.guide.map(q => <li key={q}>{q}</li>)}
+        </ol>
       </div>
     </article>
   );
@@ -498,7 +477,7 @@ export function MeetingsView({route, round}: {route?: string; round?: number}) {
         />
         {list.length === 0 ? (
           <p className="empty">
-            {tab === 'upcoming' ? 'Nothing booked right now. Confirmed meetings land here, and on your calendar.' : tab === 'held' ? 'Held meetings land here, with a verdict and a transcript.' : 'No missed meetings. If someone misses a call, Tymes finds a new time and you are not charged.'}
+            {tab === 'upcoming' ? 'Nothing booked right now. Confirmed meetings land here, and on your calendar.' : tab === 'held' ? 'Held meetings land here, for you to rate.' : 'No missed meetings. If someone misses a call, Tymes finds a new time and you are not charged.'}
           </p>
         ) : (
           <>
@@ -519,7 +498,7 @@ export function MeetingsView({route, round}: {route?: string; round?: number}) {
                         <td>{fmtDay(state, m.day)}, {m.time}</td>
                         <td>
                           <span className="status">
-                            {m.status === 'held' && m.verdict ? <><Dot yes={m.verdict.yes} /> {m.verdict.yes ? 'Real fit' : 'Not a fit'}</> : m.status === 'upcoming' ? 'Brief ready' : 'Did not join'}
+                            {m.status === 'held' ? 'Held' : m.status === 'upcoming' ? 'Brief ready' : 'Did not join'}
                           </span>
                         </td>
                         <td className="end">
@@ -545,104 +524,8 @@ export function Meetings({route}: {route?: string}) {
   const goal = useDemo().campaign?.goal;
   return (
     <>
-      <PageHead title="Meetings" sub="Each one comes with a brief. Held meetings get a verdict. Missed ones get a new time, at no charge."><CampaignSwitch /></PageHead>
+      <PageHead title="Meetings" sub="Each one comes with a brief. Rate each held meeting. Missed ones get a new time, at no charge."><CampaignSwitch /></PageHead>
       <MeetingsView key={`${goal}-${route}`} route={route} />
     </>
   );
 }
-
-// ----- Insights -----
-
-export function InsightsView({round}: {round?: number}) {
-  const state = useDemo();
-  const c = state.campaign;
-  if (!c) return null;
-  const pack = packOf(c);
-  const held = c.meetings
-    .filter(m => m.status === 'held' && (round === undefined || m.round === round))
-    .sort((a, b) => Number(b.verdict?.yes) - Number(a.verdict?.yes) || a.day - b.day);
-  const yes = held.filter(m => m.verdict?.yes).length;
-  if (!held.length) {
-    return <p className="empty" style={{borderTop: '2px solid var(--sumi)'}}>Verdicts appear here after the first held meeting.</p>;
-  }
-  return (
-    <div className="band-ins dark">
-      {held.map(m => {
-        const p = who(c, m.prospectId);
-        if (!m.verdict || !p) return null;
-        return (
-          <div className="vrow" key={m.id}>
-            <h3>{p.name}<small>{p.role} · {p.company}</small></h3>
-            <span className="mark">
-              <svg viewBox="0 0 48 48" aria-hidden="true">
-                {m.verdict.yes ? <circle cx="24" cy="24" r="22" fill="#E63B2E" /> : <circle cx="24" cy="24" r="20.5" fill="none" stroke="#CDD5EF" strokeWidth="3" />}
-              </svg>
-              {m.verdict.yes ? pack.yesLabel : 'Not a fit'}
-            </span>
-            <p><b>Why:</b> {m.verdict.reason}<br /><i>“{m.verdict.quote}”</i></p>
-          </div>
-        );
-      })}
-      {held.length >= 2 && (
-        <div className="pat">
-          <div className="dots" role="img" aria-label={`${yes} of ${held.length} filled`}>
-            {held.map((m, i) => <i key={i} className={m.verdict?.yes ? undefined : 'n'} />)}
-          </div>
-          <p>
-            {pack.pattern.line.replace('{yes}', String(yes)).replace('{held}', String(held.length))}
-            <span className="nx">{yes < held.length ? pack.pattern.next : 'Every held meeting so far was a real fit.'}</span>
-          </p>
-        </div>
-      )}
-    </div>
-  );
-}
-
-export function Insights() {
-  const state = useDemo();
-  const c = state.campaign;
-  const [open, setOpen] = useState<string | null>(null);
-  const held = c?.meetings.filter(m => m.status === 'held') ?? [];
-  return (
-    <>
-      <PageHead
-        title={<>Insights <span className="pill q" style={{verticalAlign: 'middle', marginLeft: 8, letterSpacing: 0}}>On the roadmap</span></>}
-        sub="Is each person a real potential customer, and why. Patterns across all meetings, and every transcript."
-      >
-        <CampaignSwitch />
-      </PageHead>
-      <InsightsView />
-      {c && held.length > 0 && (
-        <section className="section">
-          <h2 className="h-block">Transcripts</h2>
-          <div className="table-wrap">
-            <table className="table">
-              <tbody>
-                {held.map(m => {
-                  const p = who(c, m.prospectId);
-                  const isOpen = open === m.id;
-                  return (
-                    <tr key={m.id}>
-                      <td>
-                        <button type="button" className="main" aria-expanded={isOpen} onClick={() => setOpen(isOpen ? null : m.id)}>{p?.name}, {p?.company}</button>
-                        <span className="sub">{fmtDay(state, m.day)} · {proofName(m.proof ?? 'trust')}</span>
-                        {isOpen && (
-                          <ul className="transcript" style={{marginTop: 8, maxWidth: '70ch'}}>
-                            {m.transcript?.map(([speaker, line], i) => (
-                              <li key={i}><b>{speaker.split(' ')[0]}</b><span>{line}</span></li>
-                            ))}
-                          </ul>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      )}
-    </>
-  );
-}
-
