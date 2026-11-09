@@ -173,7 +173,7 @@ function Team() {
           if (!value) return;
           update(s => {
             const slug = value.toLowerCase().replace(/[^a-z]+/g, '.');
-            s.team.push({name: value, email: `${slug}@threeday.example`, role: 'Member'});
+            s.team.push({name: value, email: `${slug}@acme.example`, role: 'Member'});
           });
           setName('');
         }}

@@ -49,7 +49,7 @@ const appearance = {
       padding: '1px 7px',
       borderRadius: 0,
       border: 0,
-      background: 'var(--mus)',
+      background: 'var(--paper2)',
       color: 'var(--sumi)',
       fontSize: '12px',
       fontWeight: 700,

@@ -43,16 +43,6 @@ export function Shape({name, className, outline}: {name: ShapeName; className?: 
   );
 }
 
-export function Glyph({shapes}: {shapes: readonly (ShapeName | [ShapeName, boolean])[]}) {
-  return (
-    <span className="glyph" aria-hidden="true">
-      {shapes.map((item, i) =>
-        typeof item === 'string' ? <Shape key={i} name={item} /> : <Shape key={i} name={item[0]} outline={item[1]} />,
-      )}
-    </span>
-  );
-}
-
 export function Arrow() {
   return (
     <svg className="arrow" width="18" height="14" viewBox="0 0 18 14" aria-hidden="true">

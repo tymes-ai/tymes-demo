@@ -43,10 +43,10 @@ Development. `public/privacy.html` is the privacy policy, outside the login.
    - Maya Okafor misses her call: nothing used from the pack, and a new time
    - Settings, Billing: buy another pack of 10, 20, 50, or 100. Only held meetings
      use the pack, and work pauses when it runs out
-   - Meetings: the brief, then the verdict, the rating, and the moved fit scores
+   - Meetings: the brief before, and your rating after
    - Settings, Approval level: pick Automatic, then move the clock
    - Settings, Do not contact: add a company, then read Campaign, Sequence
-   - Day 12, Campaign, Act: change the ISP, and review a sharper round 2
+   - Day 12, Campaign, Act: continue with a fresh list, or stop
    - Campaigns, New campaign: run another goal under the same account. Home rolls
      them up, and one clock, calendar, DNC list, and meeting pack cover them all
    - `video/tymes-two-campaigns.mp4` is a recorded walkthrough of this
@@ -55,7 +55,7 @@ Development. `public/privacy.html` is the privacy policy, outside the login.
 
 | Path                   | Holds                                         |
 | :--------------------- | :-------------------------------------------- |
-| `src/sim/content.ts`   | All the story: goals, people, replies, verdicts |
+| `src/sim/content.ts`   | All the story: goals, people, replies         |
 | `src/sim/engine.ts`    | The product logic, as pure functions      |
 | `src/sim/store.ts`     | State and `localStorage`                      |
 | `src/screens/`         | The pages                                     |
