@@ -193,7 +193,7 @@ export function Company() {
             <div>
               <p className="b small" style={{marginBottom: 8}}>Optional, and makes the draft better</p>
               <div className="tasks">
-                <ToggleRow label="Add a deck or documents" sub="threeday_overview.pdf" on={extra.deck} onToggle={() => setExtra({...extra, deck: !extra.deck})} />
+                <ToggleRow label="Add a deck or documents" sub="acme_overview.pdf" on={extra.deck} onToggle={() => setExtra({...extra, deck: !extra.deck})} />
                 <ToggleRow label="Name 5 sample customers" sub="From your beta list" on={extra.customers} onToggle={() => setExtra({...extra, customers: !extra.customers})} />
               </div>
             </div>
@@ -209,7 +209,7 @@ export function Company() {
             <Working
               lines={[
                 ...COMPANY.sources.map(item => `Reading ${item}`),
-                ...(extra.deck ? ['Reading threeday_overview.pdf'] : []),
+                ...(extra.deck ? ['Reading acme_overview.pdf'] : []),
                 ...(extra.customers ? ['Looking up your 5 sample customers'] : []),
                 'Writing a draft profile',
               ]}

@@ -101,16 +101,16 @@ export interface Pack {
 }
 
 export const COMPANY = {
-  name: 'Threeday',
-  site: 'threeday.example',
+  name: 'Acme',
+  site: 'acme.example',
   line: 'Month-end close software for small finance teams.',
-  does: 'Threeday pulls bank feeds, invoices, and spreadsheets into one close checklist, so a finance team of two can finish the books in three days instead of nine.',
+  does: 'Acme pulls bank feeds, invoices, and spreadsheets into one close checklist, so a finance team of two can finish the books in three days instead of nine.',
   forWhom: 'Finance leads at companies with 10 to 50 people, still closing in spreadsheets.',
   stage: 'Pre-seed. Private beta with a handful of design partners.',
   sources: [
-    'threeday.example: home page',
-    'threeday.example/product',
-    'threeday.example/about',
+    'acme.example: home page',
+    'acme.example/product',
+    'acme.example/about',
     'Founder posts on LinkedIn',
     'Public company listings',
   ],
@@ -118,7 +118,7 @@ export const COMPANY = {
 
 export const FOUNDER = {
   name: 'Lena Hart',
-  email: 'lena@threeday.example',
+  email: 'lena@acme.example',
 };
 
 const CUSTOMERS: Pack = {
@@ -172,7 +172,7 @@ const CUSTOMERS: Pack = {
   },
   subject: 'how {company} runs month-end close',
   intro:
-    'Hi {first},\n\n{hook}\n\nI run Threeday, and I am trying to learn how small finance teams handle close today. I am not selling anything yet.\n\nWould 20 minutes next week work?\n\n{founder}',
+    'Hi {first},\n\n{hook}\n\nI run Acme, and I am trying to learn how small finance teams handle close today. I am not selling anything yet.\n\nWould 20 minutes next week work?\n\n{founder}',
   linkedin:
     'Hi {first}, I emailed you last week about how {company} handles month-end close. Happy to ask here if that is easier. {founder}',
   followUp:
@@ -419,8 +419,8 @@ const INVESTORS: Pack = {
   },
   subject: 'month-end close, and {company}',
   intro:
-    'Hi {first},\n\n{hook}\n\nI run Threeday. We get small finance teams through month-end close in three days instead of nine. I am meeting a few seed investors ahead of a round.\n\nWould 20 minutes next week work?\n\n{founder}',
-  linkedin: 'Hi {first}, I emailed you last week about Threeday. Happy to talk here if you prefer. {founder}',
+    'Hi {first},\n\n{hook}\n\nI run Acme. We get small finance teams through month-end close in three days instead of nine. I am meeting a few seed investors ahead of a round.\n\nWould 20 minutes next week work?\n\n{founder}',
+  linkedin: 'Hi {first}, I emailed you last week about Acme. Happy to talk here if you prefer. {founder}',
   followUp: 'Hi {first}, one last note from me. If this is not a fit for {company}, is there someone else you would point me to?\n\n{founder}',
   refines: [
     {key: 'stage', label: 'Only funds that lead at seed', drops: 'big', match: /seed|stage|lead|early/i, done: 'Swapped {n} later-stage funds for funds that lead at seed.'},
@@ -572,8 +572,8 @@ const PARTNERS: Pack = {
   },
   subject: 'month-end close for {company} clients',
   intro:
-    'Hi {first},\n\n{hook}\n\nI run Threeday. We get small finance teams through close in three days. I would like to learn how firms like yours handle it for clients, and whether there is a way to work together.\n\nWould 20 minutes next week work?\n\n{founder}',
-  linkedin: 'Hi {first}, I emailed you last week about Threeday and {company}. Happy to talk here if you prefer. {founder}',
+    'Hi {first},\n\n{hook}\n\nI run Acme. We get small finance teams through close in three days. I would like to learn how firms like yours handle it for clients, and whether there is a way to work together.\n\nWould 20 minutes next week work?\n\n{founder}',
+  linkedin: 'Hi {first}, I emailed you last week about Acme and {company}. Happy to talk here if you prefer. {founder}',
   followUp: 'Hi {first}, one last note from me. If this is not for {company}, who else should I ask?\n\n{founder}',
   refines: [
     {key: 'firms', label: 'Only firms under 50 clients', drops: 'big', match: /under|small|client|size/i, done: 'Swapped {n} large networks for smaller firms.'},
