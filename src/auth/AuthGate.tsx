@@ -124,9 +124,9 @@ function dropDemoRoute() {
 function LoginPage() {
   useState(dropDemoRoute);
   return (
-    <div className="setup">
-      <div className="login-grid" style={{minHeight: '100dvh'}}>
-        <div className="login-left" id="main">
+    <div className="login">
+      <div className="login-grid">
+        <main className="login-left" id="main">
           <Logo />
           <div className="login-box">
             <h1 className="h-step">Log in to Tymes.</h1>
@@ -135,7 +135,7 @@ function LoginPage() {
           <small>
             We record your name, email, and when you sign in. <a href="./privacy.html">Privacy policy</a> · <a href="./terms.html">Terms</a>
           </small>
-        </div>
+        </main>
         <div className="login-right dark">
           <p>Pay only for the meetings you had.</p>
           <small>Buy a pack of 10, 20, 50, or 100 up front. No seats.</small>
